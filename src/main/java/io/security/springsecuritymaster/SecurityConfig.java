@@ -1,8 +1,7 @@
-package io.security.springsecuritymaster.security.configs;
+package io.security.springsecuritymaster;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -17,12 +16,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()
-                        .anyRequest().authenticated())
-                .formLogin(Customizer.withDefaults())
-        ;
+                .authorizeHttpRequests( auth -> auth.anyRequest().authenticated())
+                .httpBasic(basic -> basic
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                );
+
         return http.build();
     }
 
@@ -31,4 +31,5 @@ public class SecurityConfig {
         UserDetails user = User.withUsername("user").password("{noop}1111").roles("USER").build();
         return  new InMemoryUserDetailsManager(user);
     }
+
 }

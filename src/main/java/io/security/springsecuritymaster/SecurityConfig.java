@@ -1,4 +1,4 @@
-package io.security.springsecuritymaster.security.configs;
+package io.security.springsecuritymaster;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,12 +17,20 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests
+                        (auth -> auth
+                                .requestMatchers("/anonymous").hasRole("GUEST") // 익명 사용자에게 ROLE_GUEST 권한 부여
+                                .requestMatchers("/anonymousContext","/authentication").permitAll() // 익명 사용자에게 접근 허용
+                                .anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
-        ;
+                .anonymous(anonymous -> anonymous
+                        .principal("guest")
+                        .authorities("ROLE_GUEST"));
+
+
+
         return http.build();
     }
 
@@ -31,4 +39,5 @@ public class SecurityConfig {
         UserDetails user = User.withUsername("user").password("{noop}1111").roles("USER").build();
         return  new InMemoryUserDetailsManager(user);
     }
+
 }

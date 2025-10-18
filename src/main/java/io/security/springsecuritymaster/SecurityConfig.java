@@ -1,16 +1,12 @@
 package io.security.springsecuritymaster;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
-import org.springframework.security.authorization.AuthorityAuthorizationManager;
-import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationEventPublisher;
+import org.springframework.security.authorization.SpringAuthorizationEventPublisher;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -20,14 +16,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
-import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
-import org.springframework.security.web.util.matcher.AnyRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcherEntry;
-import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Configuration
 public class SecurityConfig {
 
@@ -43,7 +33,10 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(authorize -> authorize
-                .anyRequest().access(authorizationManager(null)))
+                        .requestMatchers("/user").hasAuthority("ROLE_USER")
+                        .requestMatchers("/db").hasAuthority("ROLE_DB")
+                        .requestMatchers("/admin").hasAuthority("ROLE_ADMIN")
+                        .anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable);
 
@@ -51,31 +44,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthorizationManager<RequestAuthorizationContext> authorizationManager(HandlerMappingIntrospector introspector){
-        List<RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>>> mappings = new ArrayList<>();
-
-        RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>> requestMatcherEntry1 =
-                new RequestMatcherEntry<>(new MvcRequestMatcher(introspector, "/user"),
-                        AuthorityAuthorizationManager.hasAuthority("ROLE_USER"));
-
-        RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>> requestMatcherEntry2 =
-                new RequestMatcherEntry<>(new MvcRequestMatcher(introspector, "/db"),
-                        AuthorityAuthorizationManager.hasAuthority("ROLE_DB"));
-
-        RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>> requestMatcherEntry3 =
-                new RequestMatcherEntry<>(new MvcRequestMatcher(introspector, "/admin"),
-                        AuthorityAuthorizationManager.hasRole("ADMIN"));
-
-        RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>> requestMatcherEntry4 =
-                new RequestMatcherEntry<>(AnyRequestMatcher.INSTANCE, new AuthenticatedAuthorizationManager<>());
-
-        mappings.add(requestMatcherEntry1);
-        mappings.add(requestMatcherEntry2);
-        mappings.add(requestMatcherEntry3);
-        mappings.add(requestMatcherEntry4);
-
-        return new CustomRequestMatcherDelegatingAuthorizationManager(mappings);
+    public AuthorizationEventPublisher authorizationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        return new SpringAuthorizationEventPublisher(applicationEventPublisher);
     }
+
+ /*   @Bean
+    public AuthorizationEventPublisher myAuthorizationEventPublisher(ApplicationEventPublisher applicationEventPublisher){
+        return new MyAuthorizationEventPublisher(new SpringAuthorizationEventPublisher(applicationEventPublisher), applicationEventPublisher);
+    }
+*/
     @Bean
     public UserDetailsService userDetailsService(){
         UserDetails user = User.withUsername("user").password("{noop}1111").roles("USER").build();

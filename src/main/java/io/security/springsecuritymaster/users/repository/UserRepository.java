@@ -7,6 +7,6 @@ import io.security.springsecuritymaster.domain.entity.Account;
 
 public interface UserRepository extends JpaRepository<Account, Long> {
 
-	Account finBydByUsername(String username);
+	Account findByUsername(String username);
 
 }

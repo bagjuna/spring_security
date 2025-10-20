@@ -11,13 +11,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
 import io.security.springsecuritymaster.security.filters.RestAuthenticationFilter;
 import io.security.springsecuritymaster.security.handler.FormAccessDeniedHandler;
+import io.security.springsecuritymaster.security.handler.FormAuthenticationFailureHandler;
+import io.security.springsecuritymaster.security.handler.FormAuthenticationSuccessHandler;
+import io.security.springsecuritymaster.security.handler.RestAuthenticationFailureHandler;
+import io.security.springsecuritymaster.security.handler.RestAuthenticationSuccessHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -27,14 +29,16 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
 	private final AuthenticationProvider authenticationProvider;
-	private final AuthenticationSuccessHandler successHandler;
-	private final AuthenticationFailureHandler failureHandler;
+	private final AuthenticationProvider restAuthenticationProvider;
 	private final AuthenticationDetailsSource<HttpServletRequest, WebAuthenticationDetails> authenticationDetailsSource;
+	private final FormAuthenticationSuccessHandler successHandler;
+	private final FormAuthenticationFailureHandler failureHandler;
+	private final RestAuthenticationSuccessHandler restSuccessHandler;
+	private final RestAuthenticationFailureHandler restFailureHandler;
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.securityMatcher("/api/login")
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.*", "/*/icon-*").permitAll()
 				.requestMatchers("/", "/signup", "/login*").permitAll()
@@ -50,6 +54,7 @@ public class SecurityConfig {
 				.failureHandler(failureHandler)
 				.permitAll()
 			)
+			//        .csrf(AbstractHttpConfigurer::disable)
 			.authenticationProvider(authenticationProvider)
 			.exceptionHandling(exception ->
 				exception.accessDeniedHandler(new FormAccessDeniedHandler("/denied")));
@@ -65,16 +70,17 @@ public class SecurityConfig {
 
 		AuthenticationManager authenticationManager = http.getSharedObject(
 				AuthenticationManagerBuilder.class)
-			.authenticationProvider(authenticationProvider)
+			.authenticationProvider(restAuthenticationProvider)
 			.build();
 
 		http
+			.securityMatcher("/api/**")
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/css/**", "/images/**", "/js/**", "/favicon.*", "/*/icon-*").permitAll()
 				.anyRequest().permitAll()
 			)
 			.csrf(AbstractHttpConfigurer::disable)
-			.addFilterBefore(restAuthenticationFilter(authenticationManager), UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(restAuthenticationFilter(http,authenticationManager), UsernamePasswordAuthenticationFilter.class)
 			.authenticationManager(authenticationManager)
 
 		;
@@ -83,10 +89,12 @@ public class SecurityConfig {
 		return http.build();
 	}
 
-	private RestAuthenticationFilter restAuthenticationFilter(AuthenticationManager authenticationManager) {
-		RestAuthenticationFilter filter = new RestAuthenticationFilter();
-		filter.setAuthenticationManager(authenticationManager);
-		return filter;
+	private RestAuthenticationFilter restAuthenticationFilter(HttpSecurity httpSecurity,AuthenticationManager authenticationManager) {
+		RestAuthenticationFilter restAuthenticationFilter = new RestAuthenticationFilter(httpSecurity);
+		restAuthenticationFilter.setAuthenticationManager(authenticationManager);
+		restAuthenticationFilter.setAuthenticationSuccessHandler(restSuccessHandler);
+		restAuthenticationFilter.setAuthenticationFailureHandler(restFailureHandler);
+		return restAuthenticationFilter;
 	}
 
 }

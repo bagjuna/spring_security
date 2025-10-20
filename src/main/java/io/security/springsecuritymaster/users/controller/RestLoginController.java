@@ -10,5 +10,4 @@ public class RestLoginController {
 	public String restLogin() {
 		return "restLogin";
 	}
-
 }

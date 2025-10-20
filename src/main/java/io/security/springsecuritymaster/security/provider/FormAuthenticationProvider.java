@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import io.security.springsecuritymaster.domain.dto.AccountContext;
+import io.security.springsecuritymaster.security.details.FormAuthenticationDetails;
+import io.security.springsecuritymaster.security.exception.SecretException;
 import lombok.RequiredArgsConstructor;
 
 @Component("authenticationProvider")
@@ -30,6 +32,11 @@ public class FormAuthenticationProvider implements AuthenticationProvider {
 			throw new BadCredentialsException("Invalid password");
 		}
 
+		String secretKey = ((FormAuthenticationDetails)authentication.getDetails()).getSecretKey();
+
+		if(secretKey == null || !secretKey.equals("secret")) {
+			throw new SecretException("Invalid secret key");
+		}
 
 		return new UsernamePasswordAuthenticationToken(accountContext.getAccountDto(), null, accountContext.getAuthorities());
 	}

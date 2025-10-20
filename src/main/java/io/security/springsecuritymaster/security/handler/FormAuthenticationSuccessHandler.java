@@ -24,8 +24,8 @@ public class FormAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuc
 	private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
 	@Override
-	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-		Authentication authentication) throws IOException, ServletException {
+	public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) throws IOException {
+
 		setDefaultTargetUrl("/");
 
 		SavedRequest savedRequest = requestCache.getRequest(request, response);

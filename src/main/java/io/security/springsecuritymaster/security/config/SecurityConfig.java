@@ -14,6 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
+import io.security.springsecuritymaster.security.dsl.RestApiDsl;
 import io.security.springsecuritymaster.security.entrypoint.RestAuthenticationEntryPoint;
 import io.security.springsecuritymaster.security.filters.RestAuthenticationFilter;
 import io.security.springsecuritymaster.security.handler.FormAccessDeniedHandler;
@@ -74,7 +75,6 @@ public class SecurityConfig {
 		authenticationManagerBuilder.authenticationProvider(restAuthenticationProvider);
 		AuthenticationManager authenticationManager = authenticationManagerBuilder.build();            // build() 는 최초 한번 만 호출해야 한다
 
-
 		http
 			.securityMatcher("/api/**")
 			.authorizeHttpRequests(auth -> auth
@@ -86,13 +86,18 @@ public class SecurityConfig {
 				.anyRequest().authenticated()
 			)
 			// .csrf(AbstractHttpConfigurer::disable)
-			.addFilterBefore(restAuthenticationFilter(http, authenticationManager),
-				UsernamePasswordAuthenticationFilter.class)
+			// .addFilterBefore(restAuthenticationFilter(http, authenticationManager), UsernamePasswordAuthenticationFilter.class)
 			.authenticationManager(authenticationManager)
 			.exceptionHandling(exception -> exception
 				.authenticationEntryPoint(new RestAuthenticationEntryPoint())
 				.accessDeniedHandler(new RestAccessDeniedHandler())
+			).with(new RestApiDsl<>(), restDsl -> restDsl
+				.restSuccessHandler(restSuccessHandler)
+				.restFailureHandler(restFailureHandler)
+				.loginPage("/api/login")  // 이거 없어도 동작함
+				.loginProcessingUrl("/api/login")  // 이거 없어도 동작함
 			)
+
 		;
 
 
@@ -100,7 +105,7 @@ public class SecurityConfig {
 	}
 
 	private RestAuthenticationFilter restAuthenticationFilter(HttpSecurity httpSecurity,AuthenticationManager authenticationManager) {
-		RestAuthenticationFilter restAuthenticationFilter = new RestAuthenticationFilter(httpSecurity);
+		RestAuthenticationFilter restAuthenticationFilter = new RestAuthenticationFilter();
 		restAuthenticationFilter.setAuthenticationManager(authenticationManager);
 		restAuthenticationFilter.setAuthenticationSuccessHandler(restSuccessHandler);
 		restAuthenticationFilter.setAuthenticationFailureHandler(restFailureHandler);

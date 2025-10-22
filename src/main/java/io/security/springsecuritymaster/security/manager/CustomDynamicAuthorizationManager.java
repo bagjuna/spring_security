@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.access.expression.DefaultHttpSecurityExpressionHandler;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
@@ -17,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import io.security.springsecuritymaster.admin.repository.ResourcesRepository;
-import io.security.springsecuritymaster.security.mapper.MapBasedUrlRoleMapper;
 import io.security.springsecuritymaster.security.mapper.PersistentUrlRoleMapper;
 import io.security.springsecuritymaster.security.service.DynamicAuthorizationService;
 import jakarta.annotation.PostConstruct;
@@ -35,7 +36,11 @@ public class CustomDynamicAuthorizationManager implements AuthorizationManager<R
 	private final HandlerMappingIntrospector handlerMappingIntrospector;
 
 	private final ResourcesRepository resourcesRepository;
+	private final RoleHierarchyImpl roleHierarchy;
+
 	DynamicAuthorizationService dynamicAuthorizationService;
+
+
 	@PostConstruct
 	public void mapping() {
 		dynamicAuthorizationService = new DynamicAuthorizationService(new PersistentUrlRoleMapper(resourcesRepository));
@@ -78,9 +83,17 @@ public class CustomDynamicAuthorizationManager implements AuthorizationManager<R
 
 	private AuthorizationManager<RequestAuthorizationContext> customAuthorizationManager(String role) {
 		if (role.startsWith("ROLE")) {
-			return AuthorityAuthorizationManager.hasAuthority(role);
+			AuthorityAuthorizationManager<RequestAuthorizationContext> authorizationManager
+				= AuthorityAuthorizationManager.hasAuthority(role);
+			authorizationManager.setRoleHierarchy(roleHierarchy);
+			return authorizationManager;
 		}else{
-			return new WebExpressionAuthorizationManager(role);
+			DefaultHttpSecurityExpressionHandler handler = new DefaultHttpSecurityExpressionHandler();
+			handler.setRoleHierarchy(roleHierarchy);
+
+			WebExpressionAuthorizationManager authorizationManager = new WebExpressionAuthorizationManager(role);
+			authorizationManager.setExpressionHandler(handler);
+			return authorizationManager;
 		}
 	}
 

@@ -40,5 +40,6 @@ public class ResourcesServiceImpl implements ResourcesService {
     @Transactional
     public void deleteResources(long id) {
         resourcesRepository.deleteById(id);
+        authorizationManager.reload();
     }
 }

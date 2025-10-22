@@ -2,6 +2,7 @@ package io.security.springsecuritymaster.security.manager;
 
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -26,7 +27,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomDynamicAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
-	private List<RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>>> mappings;
+	List<RequestMatcherEntry<AuthorizationManager<RequestAuthorizationContext>>> mappings;
+
 	//    private static final AuthorizationDecision DENY = new AuthorizationDecision(false);
 	private static final AuthorizationDecision ACCESS = new AuthorizationDecision(true);
 
@@ -47,9 +49,8 @@ public class CustomDynamicAuthorizationManager implements AuthorizationManager<R
 			.entrySet().stream()
 			.map(entry -> new RequestMatcherEntry<>(
 				new MvcRequestMatcher(handlerMappingIntrospector, entry.getKey()),
-				customAuthorizationManager(entry.getValue())
-			))
-			.toList();
+				customAuthorizationManager(entry.getValue())))
+			.collect(Collectors.toList());
 
 	}
 
@@ -86,6 +87,5 @@ public class CustomDynamicAuthorizationManager implements AuthorizationManager<R
 	public synchronized void reload() {
 		mappings.clear();
 		setMapping();
-
 	}
 }

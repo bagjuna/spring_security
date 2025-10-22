@@ -29,4 +29,8 @@ public class HomeController {
 	public String restDashboard() {
 		return "/rest/dashboard";
 	}
+	@GetMapping(value="/db")
+	public String db() {
+		return "/db";
+	}
 }

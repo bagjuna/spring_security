@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.security.springsecuritymaster.admin.repository.ResourcesRepository;
 import io.security.springsecuritymaster.admin.service.ResourcesService;
 import io.security.springsecuritymaster.domain.entity.Resources;
+import io.security.springsecuritymaster.security.manager.CustomDynamicAuthorizationManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ResourcesServiceImpl implements ResourcesService {
 
     private final ResourcesRepository resourcesRepository;
+    private final CustomDynamicAuthorizationManager authorizationManager;
 
     @Transactional
     public Resources getResources(long id) {
@@ -32,6 +34,7 @@ public class ResourcesServiceImpl implements ResourcesService {
     @Transactional
     public void createResources(Resources resources){
         resourcesRepository.save(resources);
+        authorizationManager.reload();
     }
 
     @Transactional
